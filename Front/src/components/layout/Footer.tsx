@@ -58,7 +58,9 @@ const Footer = () => {
             </h4>
             <div className="flex gap-4">
               <a
-                href="#"
+                href="https://www.facebook.com/vertexuci/?locale=es_LA"
+                target="_blank"
+                rel="noreferrer"
                 className="w-10 h-10 bg-slate-800/50 rounded-lg flex items-center justify-center hover:bg-emerald-600/20 hover:scale-110 transition-all duration-300 border border-emerald-500/30"
               >
                 <svg
@@ -70,7 +72,9 @@ const Footer = () => {
                 </svg>
               </a>
               <a
-                href="#"
+                href="https://x.com/VertexUCI"
+                target="_blank"
+                rel="noreferrer"
                 className="w-10 h-10 bg-slate-800/50 rounded-lg flex items-center justify-center hover:bg-purple-600/20 hover:scale-110 transition-all duration-300 border border-purple-500/20"
               >
                 <svg

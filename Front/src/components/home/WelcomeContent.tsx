@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { gamesAPI, API_URL } from "../../services/api";
+import { gamesAPI, reviewsAPI, API_URL } from "../../services/api";
 import type { Game } from "../../types/game.types";
+import type { Review } from "../../types/review.types";
 import GameDetailModal from "./GameDetailModal";
 
 const getImageUrl = (imageUrl: string) => {
@@ -11,19 +12,55 @@ const getImageUrl = (imageUrl: string) => {
 
 const WelcomeContent = () => {
   const [featuredGames, setFeaturedGames] = useState<Game[]>([]);
+  const [ratingsByGameId, setRatingsByGameId] = useState<
+    Record<number, { averageRating: string | null; count: number }>
+  >({});
   const [detailGameId, setDetailGameId] = useState<number | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   useEffect(() => {
+    let alive = true;
+
+    const calcAverageRating = (reviews: Review[]) => {
+      if (reviews.length === 0) return null;
+      const avg = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length;
+      return avg.toFixed(1);
+    };
+
     const fetchGames = async () => {
       try {
         const games = await gamesAPI.getAll();
+        if (!alive) return;
         setFeaturedGames(games);
+
+        // Calificación promedio (promedio de reseñas) para mostrarla en las tarjetas.
+        // Se cachea por id para evitar recalcular en cada render.
+        const entries = await Promise.all(
+          games.map(async (g) => {
+            try {
+              const reviews = await reviewsAPI.getByGame(g.id);
+              const averageRating = calcAverageRating(reviews);
+              return [g.id, { averageRating, count: reviews.length }] as const;
+            } catch {
+              return [g.id, { averageRating: null, count: 0 }] as const;
+            }
+          })
+        );
+
+        if (!alive) return;
+        setRatingsByGameId(Object.fromEntries(entries) as Record<
+          number,
+          { averageRating: string | null; count: number }
+        >);
       } catch (error) {
         console.error("Error fetching games:", error);
       }
     };
     fetchGames();
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const openDetail = (gameId: number) => {
@@ -93,6 +130,35 @@ const WelcomeContent = () => {
                   </div>
                 </div>
                 <div className="p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <svg
+                        className="w-4 h-4 text-yellow-400"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.368 2.447a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.369-2.447a1 1 0 00-1.175 0l-3.369 2.447c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.98 9.384c-.784-.57-.38-1.81.588-1.81h4.162a1 1 0 00.951-.69l1.286-3.957z" />
+                      </svg>
+                      <span className="text-sm font-semibold text-yellow-400">
+                        {ratingsByGameId[game.id]
+                          ? ratingsByGameId[game.id].averageRating ?? "—"
+                          : "…"}
+                      </span>
+                      <span className="text-xs text-gray-400">/ 5</span>
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {ratingsByGameId[game.id]
+                        ? ratingsByGameId[game.id].count === 0
+                          ? "Sin reseñas"
+                          : `(${ratingsByGameId[game.id].count} ${
+                              ratingsByGameId[game.id].count === 1
+                                ? "reseña"
+                                : "reseñas"
+                            })`
+                        : "Cargando..."}
+                    </span>
+                  </div>
                   <h3 className="text-xl font-bold mb-2 text-purple-300 group-hover:text-purple-200 transition-colors">
                     {game.title}
                   </h3>
