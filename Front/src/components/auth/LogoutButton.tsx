@@ -15,6 +15,7 @@ const LogoutButton = ({ className = "", redirectTo = "/" }: LogoutButtonProps) =
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    window.dispatchEvent(new Event("auth:changed"));
     navigate(redirectTo);
     setIsConfirmOpen(false);
   };

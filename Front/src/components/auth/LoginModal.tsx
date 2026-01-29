@@ -32,6 +32,7 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }: LoginModalProps) => {
       );
       localStorage.setItem("token", response.access_token);
       localStorage.setItem("user", JSON.stringify(response.user));
+      window.dispatchEvent(new Event("auth:changed"));
       onClose();
       if (response.user.role === "admin") {
         navigate("/admin");

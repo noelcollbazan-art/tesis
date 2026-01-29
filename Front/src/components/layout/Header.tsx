@@ -1,5 +1,5 @@
 //src/components/layout/Header.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LoginModal from "../auth/LoginModal";
 import RegisterModal from "../auth/RegisterModal";
 import LogoutButton from "../auth/LogoutButton";
@@ -11,8 +11,32 @@ interface HeaderProps {
 const Header = ({ onOpenLogin }: HeaderProps) => {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const isLoggedIn =
-    typeof window !== "undefined" && !!localStorage.getItem("token");
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !!localStorage.getItem("token");
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const updateAuthStatus = () => {
+      setIsLoggedIn(!!localStorage.getItem("token"));
+    };
+
+    const onStorage = (e: StorageEvent) => {
+      // 'storage' solo se dispara en otras pestañas, pero lo escuchamos igual.
+      if (e.key === "token" || e.key === "user") updateAuthStatus();
+    };
+
+    updateAuthStatus();
+    window.addEventListener("auth:changed", updateAuthStatus);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      window.removeEventListener("auth:changed", updateAuthStatus);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
 
   const handleOpenRegister = () => {
     setIsLoginOpen(false);
