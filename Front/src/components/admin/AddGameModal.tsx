@@ -1,66 +1,86 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { CreateGameDto } from "../../types/game.types";
 
 interface AddGameModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (game: CreateGameDto) => Promise<void>;
+  onAdd: (formData: FormData) => Promise<void>;
 }
 
 const AddGameModal = ({ isOpen, onClose, onAdd }: AddGameModalProps) => {
   const [formData, setFormData] = useState<CreateGameDto>({
     title: "",
     description: "",
-    imageUrl: "",
     category: "",
     technologies: [],
     featured: false,
   });
   const [techInput, setTechInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsLoading(true);
 
-    const formDataToSend = new FormData();
-    formDataToSend.append("title", formData.title);
-    formDataToSend.append("description", formData.description);
-    formDataToSend.append("category", formData.category);
-    formDataToSend.append("featured", String(formData.featured));
-    formDataToSend.append(
-      "technologies",
-      JSON.stringify(formData.technologies),
-    );
-
-    const fileInput =
-      document.querySelector<HTMLInputElement>("input[type='file']");
-    if (fileInput?.files?.[0]) {
-      formDataToSend.append("image", fileInput.files[0]);
-    } else {
-      alert("Por favor, selecciona una imagen.");
-      setIsLoading(false);
-      return;
-    }
-
     try {
+      // Validaciones
+      if (!formData.title.trim()) {
+        throw new Error("El título es requerido");
+      }
+      if (!formData.description.trim()) {
+        throw new Error("La descripción es requerida");
+      }
+      if (!formData.category.trim()) {
+        throw new Error("La categoría es requerida");
+      }
+      if (!fileInputRef.current?.files?.[0]) {
+        throw new Error("Por favor, selecciona una imagen");
+      }
+
+      const formDataToSend = new FormData();
+      formDataToSend.append("title", formData.title.trim());
+      formDataToSend.append("description", formData.description.trim());
+      formDataToSend.append("category", formData.category.trim());
+      formDataToSend.append("featured", String(formData.featured));
+      formDataToSend.append(
+        "technologies",
+        JSON.stringify(formData.technologies),
+      );
+      formDataToSend.append("image", fileInputRef.current.files[0]);
+
+      console.log("Enviando datos:", {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        technologies: formData.technologies,
+        featured: formData.featured,
+        image: fileInputRef.current.files[0].name,
+      });
+
       await onAdd(formDataToSend);
+      
       // Reset form
       setFormData({
         title: "",
         description: "",
-        imageUrl: "",
         category: "",
         technologies: [],
         featured: false,
       });
       setTechInput("");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
       onClose();
-    } catch (error) {
-      console.error("Error al agregar juego:", error);
-      alert("Error al agregar el juego");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Error al agregar el juego";
+      console.error("Error detallado:", err);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -119,6 +139,12 @@ const AddGameModal = ({ isOpen, onClose, onAdd }: AddGameModalProps) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {/* Error Message */}
+          {error && (
+            <div className="p-4 bg-red-900/30 border border-red-500/50 rounded-lg text-red-300 text-sm">
+              {error}
+            </div>
+          )}
           {/* Título */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -159,6 +185,7 @@ const AddGameModal = ({ isOpen, onClose, onAdd }: AddGameModalProps) => {
               Imagen *
             </label>
             <input
+              ref={fileInputRef}
               type="file"
               accept="image/*"
               onChange={(e) => {

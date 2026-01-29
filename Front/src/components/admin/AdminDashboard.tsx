@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { gamesAPI } from "../../services/api";
-import type {
-  Game,
-  CreateGameDto,
-  UpdateGameDto,
-} from "../../types/game.types";
+import type { Game, UpdateGameDto } from "../../types/game.types";
 import GameCard from "./GameCard";
 import AddGameModal from "./AddGameModal";
 import EditGameModal from "./EditGameModal";
+import LogoutButton from "../auth/LogoutButton";
 
 const AdminDashboard = () => {
   const [games, setGames] = useState<Game[]>([]);
@@ -33,13 +31,15 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleAddGame = async (gameData: CreateGameDto) => {
+  const handleAddGame = async (gameData: FormData) => {
     try {
       await gamesAPI.create(gameData);
       await loadGames();
       alert("✅ Juego agregado exitosamente");
+      setIsAddModalOpen(false);
     } catch (error) {
       console.error("Error al agregar juego:", error);
+      alert("❌ Error al agregar el juego. Por favor, verifica los datos e intenta nuevamente.");
       throw error;
     }
   };
@@ -76,14 +76,28 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pt-24 pb-12">
       <div className="container mx-auto px-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Panel de Administración
-          </h1>
-          <p className="text-gray-400 text-lg">
-            Gestiona los videojuegos del Centro VERTEX
-          </p>
+        {/* Header con Cerrar sesión */}
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Panel de Administración
+            </h1>
+            <p className="text-gray-400 text-lg">
+              Gestiona los videojuegos del Centro VERTEX
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              className="px-5 py-2.5 bg-slate-700/80 hover:bg-slate-600 border border-slate-500/50 rounded-lg font-medium transition-all duration-300"
+            >
+              Inicio
+            </Link>
+            <LogoutButton
+              redirectTo="/"
+              className="px-6 py-2.5 bg-slate-700/80 hover:bg-red-600/90 border border-slate-500/50 hover:border-red-500/50 rounded-lg font-medium transition-all duration-300 flex items-center gap-2"
+            />
+          </div>
         </div>
 
         {/* Stats */}

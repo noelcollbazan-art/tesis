@@ -6,9 +6,9 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { GamesService } from './games.service';
 import { CreateGameDto } from './dto/create-game.dto';
@@ -39,6 +39,10 @@ export class GamesController {
     @UploadedFile() file: Express.Multer.File,
     @Body() createGameDto: CreateGameDto,
   ) {
+    if (!file) {
+      throw new BadRequestException('La imagen es requerida');
+    }
+
     createGameDto.imageUrl = `/uploads/${file.filename}`;
     return this.gamesService.create(createGameDto);
   }

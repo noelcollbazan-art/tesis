@@ -13,7 +13,7 @@ export interface Game {
 export interface CreateGameDto {
   title: string;
   description: string;
-  imageUrl: string;
+  imageUrl?: string;
   category: string;
   technologies: string[];
   featured?: boolean;

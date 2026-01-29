@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsOptional,
 } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 
 export class CreateGameDto {
   @IsString()
@@ -16,8 +17,8 @@ export class CreateGameDto {
   description: string;
 
   @IsString()
-  @IsNotEmpty()
-  imageUrl: string;
+  @IsOptional()
+  imageUrl?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -25,9 +26,26 @@ export class CreateGameDto {
 
   @IsArray()
   @IsString({ each: true })
+  @Type(() => String)
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return [];
+      }
+    }
+    return Array.isArray(value) ? value : [];
+  })
   technologies: string[];
 
   @IsBoolean()
   @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value === 'true' || value === '1';
+    }
+    return Boolean(value);
+  })
   featured?: boolean;
 }

@@ -1,11 +1,13 @@
 import { useState } from "react";
+import { authAPI } from "../../services/api";
 
 interface RegisterModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
+const RegisterModal = ({ isOpen, onClose, onSuccess }: RegisterModalProps) => {
   const [formData, setFormData] = useState({
     username: "",
     age: "",
@@ -13,17 +15,45 @@ const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
     password: "",
     confirmPassword: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     if (formData.password !== formData.confirmPassword) {
-      alert("Las contraseñas no coinciden");
+      setError("Las contraseñas no coinciden");
       return;
     }
-    console.log("Register:", formData);
-    // Aquí irá la lógica de registro
+    if (formData.password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+    setLoading(true);
+    try {
+      await authAPI.register(formData.username.trim(), formData.password);
+      onClose();
+      setFormData({
+        username: "",
+        age: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+      alert("Cuenta creada correctamente. Ya puedes iniciar sesión (solo lectura).");
+      onSuccess?.();
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { message?: string } } }).response
+              ?.data?.message
+          : null;
+      setError(msg || "Error al crear la cuenta. El usuario puede estar en uso.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,6 +96,11 @@ const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {error && (
+            <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
+              {error}
+            </div>
+          )}
           {/* Nombre de Usuario */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -263,9 +298,10 @@ const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
           {/* Botón Registrarse */}
           <button
             type="submit"
-            className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-[1.02]"
+            disabled={loading}
+            className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Crear Cuenta
+            {loading ? "Creando cuenta..." : "Crear Cuenta"}
           </button>
         </form>
       </div>

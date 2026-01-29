@@ -32,7 +32,11 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }: LoginModalProps) => {
       );
       localStorage.setItem("token", response.access_token);
       localStorage.setItem("user", JSON.stringify(response.user));
-      navigate("/admin"); // Navigate to admin dashboard
+      onClose();
+      if (response.user.role === "admin") {
+        navigate("/admin");
+      }
+      // Usuarios con rol "user" se quedan en la pantalla de bienvenida
     } catch (err: unknown) {
       if (err instanceof Error && "response" in err) {
         const errorResponse = (
